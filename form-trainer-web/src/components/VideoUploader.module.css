@@ -1,0 +1,24 @@
+.card {
+  background: #1e1e1e;
+  border: 1.5px solid;
+  border-radius: 16px;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  gap: 8px;
+  padding: 16px;
+}
+
+.card:hover { background: #252525; }
+
+.plusIcon { font-size: 48px; line-height: 1; }
+.checkIcon { font-size: 40px; line-height: 1; }
+
+.title { font-size: 16px; font-weight: 600; color: #fff; }
+.desc { font-size: 13px; color: #888; text-align: center; }
+.fileName { font-size: 14px; color: #fff; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub { font-size: 12px; color: #666; }
