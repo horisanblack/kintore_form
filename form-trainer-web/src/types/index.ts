@@ -11,15 +11,18 @@ export interface FramePose {
   timestamp: number;
 }
 
-export interface JointScore {
+export interface MuscleInfo {
   name: string;
-  score: number;
-  refAngle: number;
-  userAngle: number;
+  romDeg: number;
+  contractionPct: number;
+  loadIndex: number;
+  minAngle: number;
+  maxAngle: number;
 }
 
-export interface ComparisonResult {
-  overallScore: number;
-  jointScores: JointScore[];
+export interface AnalysisResult {
+  userMuscles: MuscleInfo[];
+  refMuscles: MuscleInfo[];
   feedbackMessages: string[];
+  comparisonVideoUrl: string | null;
 }

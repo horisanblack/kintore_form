@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { usePoseDetection } from './hooks/usePoseDetection';
 import { VideoUploader } from './components/VideoUploader';
-import { ResultView } from './components/ResultView';
-import type { FramePose, ComparisonResult } from './types';
+import { MuscleView } from './components/MuscleView';
+import type { FramePose, AnalysisResult } from './types';
 import styles from './App.module.css';
 
-type Step = 'select' | 'analyzing' | 'result';
+type Step = 'select' | 'extracting' | 'generating' | 'result';
 
 export default function App() {
   const [step, setStep] = useState<Step>('select');
@@ -13,36 +13,52 @@ export default function App() {
   const [userFile, setUserFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
-  const [result, setResult] = useState<ComparisonResult | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
 
-  const { extractPosesFromVideo, comparePoses } = usePoseDetection();
+  const { extractPosesFromVideo, analyzeMuscles, createComparisonVideo } = usePoseDetection();
 
   const startAnalysis = async () => {
     if (!refFile || !userFile) return;
-    setStep('analyzing');
 
-    setStatusText('参照動画を解析中...');
     let refPoses: FramePose[] = [];
     let userPoses: FramePose[] = [];
 
     try {
-      refPoses = await extractPosesFromVideo(refFile, (p) => {
+      setStep('extracting');
+      setStatusText('参照動画を解析中...');
+      refPoses = await extractPosesFromVideo(refFile, p => {
         setProgress(p * 0.5);
         setStatusText(`参照動画を解析中... ${Math.round(p * 100)}%`);
       });
 
       setStatusText('自分の動画を解析中...');
-      userPoses = await extractPosesFromVideo(userFile, (p) => {
+      userPoses = await extractPosesFromVideo(userFile, p => {
         setProgress(0.5 + p * 0.5);
         setStatusText(`自分の動画を解析中... ${Math.round(p * 100)}%`);
       });
 
-      const comparison = comparePoses(refPoses, userPoses);
-      setResult(comparison);
+      const analysis = analyzeMuscles(refPoses, userPoses);
+
+      setStep('generating');
+      setProgress(0);
+      setStatusText('比較動画を生成中...');
+
+      let videoUrl: string | null = null;
+      try {
+        videoUrl = await createComparisonVideo(refFile, userFile, refPoses, userPoses, p => {
+          setProgress(p);
+          setStatusText(`比較動画を生成中... ${Math.round(p * 100)}%`);
+        });
+      } catch (e) {
+        console.warn('比較動画の生成に失敗しました:', e);
+      }
+
+      setResult({ ...analysis, comparisonVideoUrl: videoUrl });
       setStep('result');
     } catch (e) {
       console.error(e);
       setStatusText('エラーが発生しました。もう一度お試しください。');
+      setStep('select');
     }
   };
 
@@ -53,6 +69,8 @@ export default function App() {
     setProgress(0);
     setResult(null);
   };
+
+  const isAnalyzing = step === 'extracting' || step === 'generating';
 
   return (
     <div className={styles.app}>
@@ -88,7 +106,7 @@ export default function App() {
         </>
       )}
 
-      {step === 'analyzing' && (
+      {isAnalyzing && (
         <div className={styles.analyzing}>
           <div className={styles.spinner} />
           <p className={styles.statusText}>{statusText}</p>
@@ -107,7 +125,7 @@ export default function App() {
           <header className={styles.header}>
             <h1 className={styles.title}>解析結果</h1>
           </header>
-          <ResultView result={result} onReset={reset} />
+          <MuscleView result={result} onReset={reset} />
         </>
       )}
     </div>
